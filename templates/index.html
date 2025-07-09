@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スタンプコレクション</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #4169e1;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .counter {
+            font-size: 1.2em;
+            margin: 10px 0;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .canvas-container {
+            border: 3px solid #4169e1;
+            border-radius: 15px;
+            background: white;
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        #stampCanvas {
+            display: block;
+            cursor: crosshair;
+        }
+        
+        .buttons {
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 12px 24px;
+            margin: 0 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .clear-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .story-btn {
+            background: #4ecdc4;
+            color: white;
+        }
+        
+        .save-btn {
+            background: #45b7d1;
+            color: white;
+        }
+        
+        .load-btn {
+            background: #96ceb4;
+            color: white;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .instruction {
+            color: #666;
+            font-size: 1.1em;
+            margin: 15px 0;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: none;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        .story-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            color: #333;
+            margin: 20px 0;
+        }
+        
+        .stamp-effect {
+            position: absolute;
+            pointer-events: none;
+            border: 3px solid gold;
+            border-radius: 50%;
+            animation: sparkle 0.5s ease-out;
+        }
+        
+        @keyframes sparkle {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+        
+        .stamp {
+            position: absolute;
+            font-size: 24px;
+            user-select: none;
+            pointer-events: none;
+            animation: stamp-appear 0.3s ease-out;
+        }
+        
+        @keyframes stamp-appear {
+            0% {
+                transform: scale(0) rotate(180deg);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 スタンプコレクション 🌟</h1>
+        <div class="counter" id="counter">スタンプ数: 0</div>
+        
+        <div class="canvas-container">
+            <canvas id="stampCanvas" width="700" height="400"></canvas>
+        </div>
+        
+        <div class="buttons">
+            <button class="clear-btn" onclick="clearStamps()">🗑️ クリア</button>
+            <button class="story-btn" onclick="getStory()">📖 お話しを聞く</button>
+            <button class="save-btn" onclick="saveProgress()">💾 保存</button>
+            <button class="load-btn" onclick="loadProgress()">📂 読み込み</button>
+        </div>
+        
+        <div class="instruction">
+            ✨ 白い画面をクリックしてスタンプを置いてください！ ✨
+        </div>
+    </div>
+    
+    <!-- モーダル -->
+    <div id="storyModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>📚 ご褒美のお話し</h2>
+            <div class="story-text" id="storyText"></div>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('stampCanvas');
+        const ctx = canvas.getContext('2d');
+        const counter = document.getElementById('counter');
+        let stamps = [];
+        
+        // キャンバスクリックイベント
+        canvas.addEventListener('click', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            placeStamp(x, y);
+        });
+        
+        // スタンプを置く関数
+        function placeStamp(x, y) {
+            fetch('/api/place_stamp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({x: x, y: y})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    drawStamp(data.stamp);
+                    updateCounter(data.total_count);
+                    createSparkleEffect(x, y);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // スタンプを描画
+        function drawStamp(stamp) {
+            ctx.font = '24px Arial';
+            ctx.fillStyle = stamp.color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(stamp.emoji, stamp.x, stamp.y);
+        }
+        
+        // キラキラエフェクト
+        function createSparkleEffect(x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'stamp-effect';
+            effect.style.left = (x - 15) + 'px';
+            effect.style.top = (y - 15) + 'px';
+            effect.style.width = '30px';
+            effect.style.height = '30px';
+            
+            const container = document.querySelector('.canvas-container');
+            container.appendChild(effect);
+            
+            setTimeout(() => {
+                container.removeChild(effect);
+            }, 500);
+        }
+        
+        // カウンター更新
+        function updateCounter(count) {
+            counter.textContent = `スタンプ数: ${count}`;
+        }
+        
+        // スタンプをクリア
+        function clearStamps() {
+            fetch('/api/clear_stamps', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    updateCounter(0);
+                    stamps = [];
+                }
+            });
+        }
+        
+        // ストーリーを取得
+        function getStory() {
+            fetch('/api/get_story')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    showStoryModal(data.story);
+                }
+            });
+        }
+        
+        // ストーリーモーダルを表示
+        function showStoryModal(story) {
+            document.getElementById('storyText').textContent = story;
+            document.getElementById('storyModal').style.display = 'block';
+        }
+        
+        // モーダルを閉じる
+        function closeModal() {
+            document.getElementById('storyModal').style.display = 'none';
+        }
+        
+        // 進捗を保存
+        function saveProgress() {
+            fetch('/api/save_progress', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                } else {
+                    alert(data.error);
+                }
+            });
+        }
+        
+        // 進捗を読み込み
+        function loadProgress() {
+            fetch('/api/load_progress', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    stamps = data.stamps;
+                    stamps.forEach(stamp => drawStamp(stamp));
+                    updateCounter(data.total_count);
+                    alert(data.message);
+                } else {
+                    alert(data.error);
+                }
+            });
+        }
+        
+        // ページ読み込み時にスタンプを取得
+        window.onload = function() {
+            fetch('/api/get_stamps')
+            .then(response => response.json())
+            .then(data => {
+                stamps = data.stamps;
+                stamps.forEach(stamp => drawStamp(stamp));
+                updateCounter(data.total_count);
+            });
+        };
+        
+        // モーダルの外側をクリックしたら閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('storyModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+    </script>
+</body>
+</html>

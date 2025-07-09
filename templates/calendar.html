@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カレンダー スタンプコレクション</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e, #fecfef, #fecfef, #fecfef, #fecfef, #fecfef, #fecfef, #fecfef, #fecfef, #fecfef, #fecfef, #fecfef, #fecfef, #fecfef, #fecfef, #fecfef);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #ff6b6b;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 20px;
+        }
+        
+        .nav-button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-button:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+        
+        .month-year {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .day-header {
+            background: #4ecdc4;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        
+        .day-cell {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            min-height: 100px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .day-cell:hover {
+            background: #e3f2fd;
+            border-color: #4ecdc4;
+            transform: translateY(-2px);
+        }
+        
+        .day-cell.today {
+            background: #fff3e0;
+            border-color: #ff9800;
+            box-shadow: 0 4px 8px rgba(255, 152, 0, 0.2);
+        }
+        
+        .day-cell.other-month {
+            background: #f5f5f5;
+            color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .day-cell.other-month:hover {
+            background: #f5f5f5;
+            transform: none;
+        }
+        
+        .day-number {
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .stamp-area {
+            flex: 1;
+            position: relative;
+            padding: 5px;
+        }
+        
+        .stamp {
+            position: absolute;
+            font-size: 20px;
+            user-select: none;
+            pointer-events: none;
+            animation: stamp-appear 0.5s ease-out;
+        }
+        
+        @keyframes stamp-appear {
+            0% {
+                transform: scale(0) rotate(180deg);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+        
+        .stamp-count {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .story-btn {
+            background: #4ecdc4;
+            color: white;
+        }
+        
+        .clear-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .save-btn {
+            background: #45b7d1;
+            color: white;
+        }
+        
+        .load-btn {
+            background: #96ceb4;
+            color: white;
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .stats {
+            text-align: center;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stats h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .stat-item {
+            display: inline-block;
+            margin: 0 20px;
+            padding: 10px 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: none;
+            border-radius: 20px;
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #ff6b6b;
+        }
+        
+        .story-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            color: #333;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .selected-day {
+            background: #e8f5e8 !important;
+            border-color: #4caf50 !important;
+        }
+        
+        .instructions {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗓️ カレンダー スタンプコレクション 🗓️</h1>
+        
+        <div class="calendar-header">
+            <button class="nav-button" onclick="previousMonth()">← 前の月</button>
+            <div class="month-year" id="monthYear"></div>
+            <button class="nav-button" onclick="nextMonth()">次の月 →</button>
+        </div>
+        
+        <div class="stats" id="stats">
+            <h3>📊 今月の統計</h3>
+            <div class="stat-item">
+                <div class="stat-number" id="totalStamps">0</div>
+                <div class="stat-label">総スタンプ数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="stampedDays">0</div>
+                <div class="stat-label">スタンプした日数</div>
+            </div>
+        </div>
+        
+        <div class="calendar-grid" id="calendarGrid"></div>
+        
+        <div class="controls">
+            <button class="control-btn story-btn" onclick="getStoryForSelectedDay()">📖 選んだ日のお話し</button>
+            <button class="control-btn clear-btn" onclick="clearSelectedDay()">🗑️ 選んだ日をクリア</button>
+            <button class="control-btn save-btn" onclick="saveProgress()">💾 保存</button>
+            <button class="control-btn load-btn" onclick="loadProgress()">📂 読み込み</button>
+        </div>
+        
+        <div class="instructions">
+            ✨ カレンダーの日付をクリックしてスタンプを置いてください！<br>
+            📖 スタンプを置いた日は「お話し」ボタンでストーリーが読めます<br>
+            🎯 選択した日は緑色で表示されます
+        </div>
+    </div>
+    
+    <!-- ストーリーモーダル -->
+    <div id="storyModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>📚 <span id="storyDate"></span> のお話し</h2>
+            <div class="story-text" id="storyText"></div>
+        </div>
+    </div>
+    
+    <script>
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth() + 1;
+        let selectedDate = null;
+        let calendarData = {};
+        
+        // カレンダーを初期化
+        function initCalendar() {
+            loadCalendar(currentYear, currentMonth);
+        }
+        
+        // カレンダーを読み込み
+        function loadCalendar(year, month) {
+            fetch(`/api/get_calendar/${year}/${month}`)
+            .then(response => response.json())
+            .then(data => {
+                calendarData = data;
+                renderCalendar(data);
+                loadMonthlyStats(year, month);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // カレンダーを描画
+        function renderCalendar(data) {
+            const grid = document.getElementById('calendarGrid');
+            const monthYear = document.getElementById('monthYear');
+            
+            monthYear.textContent = `${data.year}年 ${data.month_name}`;
+            
+            grid.innerHTML = '';
+            
+            // 曜日ヘッダー
+            const dayHeaders = ['日', '月', '火', '水', '木', '金', '土'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'day-header';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+            
+            // カレンダーの日付
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            
+            data.calendar.forEach(week => {
+                week.forEach(day => {
+                    const cell = document.createElement('div');
+                    cell.className = 'day-cell';
+                    
+                    if (day === 0) {
+                        cell.classList.add('other-month');
+                        cell.innerHTML = '<div class="day-number"></div><div class="stamp-area"></div>';
+                    } else {
+                        const dateStr = `${data.year}-${String(data.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        
+                        if (dateStr === todayStr) {
+                            cell.classList.add('today');
+                        }
+                        
+                        cell.innerHTML = `
+                            <div class="day-number">${day}</div>
+                            <div class="stamp-area" id="stamps-${dateStr}"></div>
+                        `;
+                        
+                        // スタンプ数を表示
+                        const stamps = data.stamps[dateStr] || [];
+                        if (stamps.length > 0) {
+                            const countBadge = document.createElement('div');
+                            countBadge.className = 'stamp-count';
+                            countBadge.textContent = stamps.length;
+                            cell.appendChild(countBadge);
+                        }
+                        
+                        // スタンプを描画
+                        const stampArea = cell.querySelector('.stamp-area');
+                        stamps.forEach(stamp => {
+                            const stampElement = document.createElement('div');
+                            stampElement.className = 'stamp';
+                            stampElement.textContent = stamp.emoji;
+                            stampElement.style.color = stamp.color;
+                            stampElement.style.left = `${stamp.x}%`;
+                            stampElement.style.top = `${stamp.y}%`;
+                            stampArea.appendChild(stampElement);
+                        });
+                        
+                        // クリックイベント
+                        cell.addEventListener('click', function() {
+                            selectDay(dateStr, cell);
+                        });
+                    }
+                    
+                    grid.appendChild(cell);
+                });
+            });
+        }
+        
+        // 日付を選択
+        function selectDay(dateStr, cell) {
+            // 以前の選択を解除
+            document.querySelectorAll('.day-cell').forEach(c => {
+                c.classList.remove('selected-day');
+            });
+            
+            // 新しい選択
+            cell.classList.add('selected-day');
+            selectedDate = dateStr;
+            
+            // スタンプを配置
+            const stampArea = cell.querySelector('.stamp-area');
+            if (stampArea) {
+                const rect = stampArea.getBoundingClientRect();
+                const x = Math.random() * 80 + 10; // 10-90%の範囲
+                const y = Math.random() * 80 + 10; // 10-90%の範囲
+                
+                placeStamp(dateStr, x, y, cell);
+            }
+        }
+        
+        // スタンプを配置
+        function placeStamp(dateStr, x, y, cell) {
+            fetch('/api/place_stamp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    date: dateStr,
+                    x: x,
+                    y: y
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // スタンプを表示
+                    const stampArea = cell.querySelector('.stamp-area');
+                    const stampElement = document.createElement('div');
+                    stampElement.className = 'stamp';
+                    stampElement.textContent = data.stamp.emoji;
+                    stampElement.style.color = data.stamp.color;
+                    stampElement.style.left = `${data.stamp.x}%`;
+                    stampElement.style.top = `${data.stamp.y}%`;
+                    stampArea.appendChild(stampElement);
+                    
+                    // カウントバッジを更新
+                    let countBadge = cell.querySelector('.stamp-count');
+                    if (!countBadge) {
+                        countBadge = document.createElement('div');
+                        countBadge.className = 'stamp-count';
+                        cell.appendChild(countBadge);
+                    }
+                    countBadge.textContent = data.total_count;
+                    
+                    // 統計を更新
+                    loadMonthlyStats(currentYear, currentMonth);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // 月間統計を読み込み
+        function loadMonthlyStats(year, month) {
+            fetch(`/api/get_monthly_stats/${year}/${month}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('totalStamps').textContent = data.total_stamps;
+                document.getElementById('stampedDays').textContent = data.stamped_days;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // 前の月へ
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 1) {
+                currentMonth = 12;
+                currentYear--;
+            }
+            loadCalendar(currentYear, currentMonth);
+        }
+        
+        // 次の月へ
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 12) {
+                currentMonth = 1;
+                currentYear++;
+            }
+            loadCalendar(currentYear, currentMonth);
+        }
+        
+        // 選択した日のストーリーを取得
+        function getStoryForSelectedDay() {
+            if (!selectedDate) {
+                alert('まず日付を選択してください！');
+                return;
+            }
+            
+            fetch(`/api/get_story/${selectedDate}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    showStoryModal(data.story, selectedDate);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // 選択した日をクリア
+        function clearSelectedDay() {
+            if (!selectedDate) {
+                alert('まず日付を選択してください！');
+                return;
+            }
+            
+            if (confirm(`${selectedDate}のスタンプをすべて削除しますか？`)) {
+                fetch(`/api/clear_day_stamps/${selectedDate}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadCalendar(currentYear, currentMonth);
+                        alert('スタンプをクリアしました！');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }
+        
+        // ストーリーモーダルを表示
+        function showStoryModal(story, date) {
+            document.getElementById('storyDate').textContent = date;
+            document.getElementById('storyText').textContent = story;
+            document.getElementById('storyModal').style.display = 'block';
+        }
+        
+        // モーダルを閉じる
+        function closeModal() {
+            document.getElementById('storyModal').style.display = 'none';
+        }
+        
+        // 進捗を保存
+        function saveProgress() {
+            fetch('/api/save_progress', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // 進捗を読み込み
+        function loadProgress() {
+            fetch('/api/load_progress', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadCalendar(currentYear, currentMonth);
+                    alert(data.message);
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // モーダルの外側をクリックしたら閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('storyModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+        
+        // 初期化
+        window.onload = function() {
+            initCalendar();
+        };
+    </script>
+</body>
+</html>
